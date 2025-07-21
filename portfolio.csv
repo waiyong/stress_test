@@ -1,0 +1,9 @@
+Asset_Type,Amount_SGD,Fund_Name,Liquidity_Period_Days,Notes
+Time_Deposit,800000,DBS 12M Fixed Deposit,365,Fixed rate 3.1% p.a.
+Time_Deposit,500000,OCBC 6M Fixed Deposit,180,Fixed rate 2.9% p.a.
+MMF,600000,Fullerton SGD Money Market Fund,1,Current yield ~2.8% p.a.
+MMF,400000,LionGlobal SGD Enhanced Liquidity Fund,3,Slightly higher yield ~3.0% p.a.
+Multi_Asset,300000,Nikko AM Global Multi-Asset Fund,30,Conservative balanced fund
+Multi_Asset,250000,Schroder Asian Income Fund,7,Regional focus with income tilt
+Bond_Fund,350000,ABF Singapore Bond Index Fund,5,Singapore government bonds
+Cash_Equivalent,200000,High-yield Savings Account,0,Emergency liquidity buffer
