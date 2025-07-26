@@ -35,6 +35,12 @@ class EnhancedDataSourceManager:
         self.asset_manager = AssetDataManager(cache_dir)
         self.last_full_refresh = None
         self.refresh_threshold_hours = 24  # Force full refresh after 24 hours
+        self.backfill_start_date = "2018-01-01"  # Default backfill start date
+    
+    def set_backfill_start_date(self, start_date: str):
+        """Set the start date for full refresh backfill"""
+        self.backfill_start_date = start_date
+        logger.info(f"Backfill start date set to: {start_date}")
         
     def fetch_market_data(self, force_refresh: bool = False, incremental: bool = True) -> Dict[str, Any]:
         """
@@ -300,7 +306,7 @@ class EnhancedDataSourceManager:
             return self._get_mock_market_indices()
             
         try:
-            start_date = "2020-01-01"
+            start_date = self.backfill_start_date
             indices_data = {}
             
             tickers = {
@@ -397,8 +403,9 @@ class EnhancedDataSourceManager:
             return {"1y_return": 0.05, "1y_volatility": 0.15, "max_drawdown": -0.20}
     
     def _expected_trading_days(self) -> int:
-        """Calculate expected trading days since 2020"""
-        return int((datetime.now() - datetime(2020, 1, 1)).days * (252/365))
+        """Calculate expected trading days since backfill start date"""
+        start_year = int(self.backfill_start_date.split('-')[0])
+        return int((datetime.now() - datetime(start_year, 1, 1)).days * (252/365))
     
     def _get_fallback_data(self) -> Dict[str, Any]:
         """Provide fallback data when all else fails"""

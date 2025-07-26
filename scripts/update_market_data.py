@@ -40,12 +40,13 @@ def setup_environment():
     
     logger.info("Environment setup completed")
 
-def update_market_data(update_type: str = "incremental") -> bool:
+def update_market_data(update_type: str = "incremental", start_date: str = "2018-01-01") -> bool:
     """
     Update market data using enhanced data source manager
     
     Args:
         update_type: "incremental" or "full_refresh"
+        start_date: Start date for full refresh (YYYY-MM-DD format)
     
     Returns:
         bool: True if update successful
@@ -55,6 +56,10 @@ def update_market_data(update_type: str = "incremental") -> bool:
     try:
         # Initialize data manager
         data_manager = EnhancedDataSourceManager()
+        
+        # Set start date for full refresh
+        if update_type == "full_refresh":
+            data_manager.set_backfill_start_date(start_date)
         
         # Determine update parameters
         if update_type == "full_refresh":
@@ -219,6 +224,11 @@ def main():
         action="store_true",
         help="Enable verbose logging"
     )
+    parser.add_argument(
+        "--start-date",
+        default="2018-01-01",
+        help="Start date for full refresh backfill (YYYY-MM-DD, default: 2018-01-01)"
+    )
     
     args = parser.parse_args()
     
@@ -255,7 +265,7 @@ def main():
             return 1
     
     # Perform data update
-    success = update_market_data(args.type)
+    success = update_market_data(args.type, getattr(args, 'start_date', '2018-01-01'))
     
     # Cleanup if requested and update was successful
     if args.cleanup and success:

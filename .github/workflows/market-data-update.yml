@@ -16,6 +16,11 @@ on:
         options:
           - incremental
           - full_refresh
+      start_date:
+        description: 'Start date for full refresh backfill (YYYY-MM-DD)'
+        required: false
+        default: '2018-01-01'
+        type: string
       
 jobs:
   update-market-data:
@@ -57,7 +62,7 @@ jobs:
     - name: Run full market data refresh
       if: github.event.inputs.update_type == 'full_refresh'
       run: |
-        python scripts/update_market_data.py --type full_refresh
+        python scripts/update_market_data.py --type full_refresh --start-date "${{ github.event.inputs.start_date || '2018-01-01' }}"
       env:
         PYTHONPATH: ${{ github.workspace }}
     
