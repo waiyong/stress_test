@@ -27,6 +27,9 @@ This is a **Church Asset Risk & Stress Testing Dashboard** built for CPC's Inves
 
 ### Local Development
 ```bash
+# Activate virtual environment (REQUIRED)
+source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -37,6 +40,12 @@ streamlit run app.py
 pip install package_name
 pip freeze > requirements.txt
 ```
+
+### Virtual Environment Setup
+- **IMPORTANT**: Always activate the virtual environment before running any Python commands
+- **Command**: `source venv/bin/activate`
+- **Required for**: Running tests, installing packages, executing scripts, running Streamlit app
+- **Verification**: Check that `(venv)` appears in terminal prompt
 
 ### Testing with Sample Data
 ```bash
@@ -157,6 +166,70 @@ def get_cached_data(cache_date=None):
 - Test all stress scenarios with extreme parameters
 - Verify PDF report generation and formatting
 - Test deployment on Streamlit Community Cloud
+
+## Documentation Structure
+
+**Main Documentation Hub**: `docs/README.md`
+
+The project uses a hierarchical documentation structure:
+
+```
+docs/
+├── README.md                        # 🏠 Main documentation hub
+├── getting-started/                 # 🚀 Setup and user guides
+│   ├── README.md                   # Getting started overview
+│   ├── installation.md             # Detailed installation guide
+│   └── user_guide.md              # Investment Committee user manual
+├── architecture/                    # 🏗️ Technical implementation
+│   ├── README.md                   # Architecture overview
+│   ├── dataops-implementation.md   # Asset-based storage details
+│   └── openbb-integration.md       # Market data pipeline
+├── project-management/              # 📋 Project tracking
+│   ├── README.md                   # Project management overview
+│   ├── project-plan.md            # Master roadmap
+│   └── project-checkpoint.md       # Current status
+└── development/                     # 🛠️ Developer resources
+    ├── README.md                   # Development overview and API reference
+    └── [future: deployment.md]     # Deployment procedures
+```
+
+**Navigation**: Each section README links upward to main documentation and cross-references related sections.
+
+## Documentation Maintenance
+
+### Architecture Diagrams
+**Location**: `docs/architecture/system-diagrams.md`
+
+**IMPORTANT**: Keep visual documentation current with code changes to ensure accuracy for stakeholders and developers.
+
+#### When to Update Diagrams:
+- **After adding new modules or components** (update High-Level Architecture, Component Interaction)
+- **When changing data flow or storage architecture** (update Data Flow, Performance Architecture)
+- **After modifying external integrations** (APIs, services - update Data Flow, Reliability diagrams)
+- **When updating core business logic or user workflows** (update User Journey, Component Interaction)
+- **After performance optimizations or architectural changes** (update Performance Architecture)
+- **When changing error handling or fallback mechanisms** (update Reliability & Fallback Architecture)
+
+#### Diagram Update Checklist:
+When making architectural changes, review and update relevant diagrams:
+- [ ] **High-Level System Architecture** - Overall system components and relationships
+- [ ] **Data Flow Diagram** - Market data pipeline from OpenBB to dashboard
+- [ ] **User Journey Flowchart** - IC member workflow through dashboard
+- [ ] **Component Interaction Diagram** - Module dependencies and data flow
+- [ ] **Performance Architecture** - Asset-based storage and optimization metrics
+- [ ] **Reliability & Fallback Architecture** - Error handling and fallback mechanisms
+
+#### Maintenance Schedule:
+- **Immediate**: Update diagrams during architectural code reviews
+- **Weekly**: Review diagram accuracy during sprint planning
+- **Monthly**: Validate all diagrams reflect current system state
+- **Release**: Ensure diagrams are current before major releases or IC presentations
+
+#### Diagram Format:
+- **Use Mermaid syntax** for GitHub compatibility and maintainability
+- **Consistent color coding** by system layer (UI, business logic, data, external)
+- **Clear annotations** for performance metrics and data flow directions
+- **Version control** diagrams alongside code changes
 
 ## Deployment
 

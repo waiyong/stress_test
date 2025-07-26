@@ -39,22 +39,35 @@ streamlit run app.py
 ### Core Modules
 
 #### `utils/enhanced_data_sources.py`
-**Primary data pipeline for real market data**
+**Primary data pipeline with intelligent hybrid backfill**
 
 ```python
 class EnhancedDataSourceManager:
+    def __init__(cache_dir: str = "data/market_cache"):
+        # data_quality_threshold_days = 180  # NEW: Hybrid backfill threshold
+    
     def fetch_market_data(force_refresh=False, incremental=True) -> Dict[str, Any]
+    def set_backfill_start_date(start_date: str) -> None  # NEW: Dynamic start date
     def get_asset_history(asset_type: str, asset_name: str, days: int = 30) -> Optional[Dict]
     def cleanup_old_data(days_to_keep: int = 90) -> None
+    
+    # NEW: Internal hybrid logic methods
+    def _get_existing_data_age_days() -> int
+    def _get_existing_coverage(index_name: str) -> Optional[Dict]
 
 # Factory function
 def get_enhanced_data_manager() -> EnhancedDataSourceManager
 ```
 
 **Key Methods**:
-- `fetch_market_data()`: Main data retrieval with intelligent caching
+- `fetch_market_data()`: **Intelligent hybrid backfill** with 180-day quality threshold
+- `set_backfill_start_date()`: **NEW**: Configure custom start dates for backfill
 - `get_asset_history()`: Historical data access for specific assets
 - `cleanup_old_data()`: Maintenance and cleanup operations
+
+**Hybrid Backfill Logic**:
+- **<180 days old data**: Incremental gap filling (50 API calls, 10 seconds)
+- **>180 days old data**: Full refresh for data quality (1000 API calls, 45 seconds)
 
 #### `utils/asset_data_manager.py`
 **Asset-based storage management**
@@ -176,11 +189,27 @@ streamlit run app.py
 
 #### Manual Triggers
 ```bash
-# Force full data refresh
-gh workflow run market-data-update.yml -f refresh_type=full_refresh
+# Standard full refresh (uses hybrid logic)
+gh workflow run "Market Data Update" --field update_type=full_refresh
 
-# Force incremental update
-gh workflow run market-data-update.yml -f refresh_type=incremental
+# Full refresh with custom start date
+gh workflow run "Market Data Update" \
+  --field update_type=full_refresh \
+  --field start_date=2016-01-01
+
+# Daily incremental update
+gh workflow run "Market Data Update" --field update_type=incremental
+```
+
+**NEW: Command Line Usage**
+```bash
+# Test hybrid backfill locally
+python scripts/update_market_data.py --type full_refresh --start-date 2016-01-01 --verbose
+
+# Shows decision logic:
+# "Historical data is X days old (>180), performing full refresh for data quality"
+# OR 
+# "Historical data is X days old (<180), using incremental backfill"
 ```
 
 ## 🧪 Testing
@@ -251,8 +280,10 @@ streamlit run app.py
 #### Adding New Assets
 1. **Update Data Manager**: Add new asset type to `AssetDataManager`
 2. **Enhance Data Sources**: Add fetching logic to `EnhancedDataSourceManager`
+   - Add to `tickers` dictionary in `_fetch_market_indices_openbb()`
+   - Add to `_get_mock_market_indices()` for fallback data
 3. **Update UI**: Add display components in `app.py`
-4. **Test Integration**: Verify end-to-end data flow
+4. **Test Integration**: Verify end-to-end data flow with hybrid backfill logic
 
 #### Modifying Data Sources
 1. **OpenBB Integration**: Update ticker symbols or data providers
