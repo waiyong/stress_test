@@ -1,0 +1,94 @@
+name: Market Data Update
+
+on:
+  schedule:
+    # Run weekdays at 6 PM Singapore Time (10 AM UTC)
+    - cron: '0 10 * * 1-5'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update to perform'
+        required: true
+        default: 'incremental'
+        type: choice
+        options:
+          - incremental
+          - full_refresh
+      
+jobs:
+  update-market-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create data directories
+      run: |
+        mkdir -p data/market_cache/rates
+        mkdir -p data/market_cache/indices  
+        mkdir -p data/market_cache/currencies
+        mkdir -p data/market_cache/bonds
+        mkdir -p data/market_cache/metadata
+        mkdir -p data/market_cache/current
+    
+    - name: Run incremental market data update
+      if: github.event.inputs.update_type != 'full_refresh'
+      run: |
+        python scripts/update_market_data.py --type incremental
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+    
+    - name: Run full market data refresh
+      if: github.event.inputs.update_type == 'full_refresh'
+      run: |
+        python scripts/update_market_data.py --type full_refresh
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+    
+    - name: Check for data changes
+      id: check_changes
+      run: |
+        git diff --quiet data/market_cache/ || echo "changes=true" >> $GITHUB_OUTPUT
+    
+    - name: Commit updated market data
+      if: steps.check_changes.outputs.changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/market_cache/
+        git commit -m "🤖 Automated market data update - $(date '+%Y-%m-%d %H:%M')"
+        git push
+    
+    - name: Create update summary
+      if: always()
+      run: |
+        echo "## Market Data Update Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Date**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Update Type**: ${{ github.event.inputs.update_type || 'incremental' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "data/market_cache/current/STI_current.json" ]; then
+          STI_PRICE=$(python -c "import json; data=json.load(open('data/market_cache/current/STI_current.json')); print(f\"${data['current_price']:.2f}\")")
+          echo "- **STI Price**: $STI_PRICE" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ -f "data/market_cache/metadata/data_status.json" ]; then
+          LAST_UPDATE=$(python -c "import json; data=json.load(open('data/market_cache/metadata/data_status.json')); print(data.get('last_incremental_update', 'N/A'))")
+          echo "- **Last Update**: $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
+        fi

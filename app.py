@@ -18,7 +18,7 @@ from utils.config import (
     ANNUAL_OPEX_SGD, RESERVE_MONTHS_REQUIRED
 )
 from utils.risk_engine import RiskEngine, run_scenario_analysis
-from utils.data_sources import get_market_data_manager
+from utils.enhanced_data_sources import get_enhanced_data_manager
 from utils.report_generator import ReportGenerator
 
 
@@ -70,8 +70,8 @@ def load_portfolio_data():
 @st.cache_data
 def get_market_data():
     """Get market data with caching"""
-    manager = get_market_data_manager()
-    return manager.fetch_market_data()
+    manager = get_enhanced_data_manager()
+    return manager.fetch_market_data(force_refresh=False, incremental=True)
 
 
 def main():
@@ -160,16 +160,35 @@ def main():
     
     # Market data context
     st.sidebar.subheader("📊 Market Context")
-    data_manager = get_market_data_manager()
-    context = data_manager.get_market_context(market_data)
+    data_manager = get_enhanced_data_manager()
     
-    st.sidebar.write(f"**Data Source:** {context['data_source']}")
-    st.sidebar.write(f"**Last Updated:** {context['data_freshness'][:19]}")
+    # Enhanced data manager provides different context structure
+    data_source = market_data.get('data_source', 'Enhanced Data Sources')
+    last_updated = market_data.get('last_updated', datetime.now().isoformat())
     
-    # Key rates display
+    st.sidebar.write(f"**Data Source:** {data_source}")
+    st.sidebar.write(f"**Last Updated:** {last_updated[:19]}")
+    
+    # Key rates display from enhanced structure
     st.sidebar.write("**Key Rates:**")
-    for rate_name, rate_value in context['key_rates'].items():
-        st.sidebar.write(f"• {rate_name}: {rate_value}")
+    singapore_rates = market_data.get('singapore_rates', {})
+    if singapore_rates:
+        st.sidebar.write(f"• SORA Rate: {singapore_rates.get('sora_rate', 0)*100:.2f}%")
+        st.sidebar.write(f"• FD Average: {singapore_rates.get('fd_rates_average', 0)*100:.2f}%")
+    
+    # Market indices display
+    market_indices = market_data.get('market_indices', {})
+    if market_indices:
+        st.sidebar.write("**Market Indices:**")
+        for index_name, index_data in market_indices.items():
+            if isinstance(index_data, dict) and 'current_price' in index_data:
+                st.sidebar.write(f"• {index_name}: ${index_data['current_price']:.2f}")
+    
+    # Currency rates display
+    currency_rates = market_data.get('currency_rates', {})
+    if currency_rates:
+        st.sidebar.write("**Currency:**")
+        st.sidebar.write(f"• SGD/USD: {currency_rates.get('sgd_usd', 0):.4f}")
     
     # Run stress test
     risk_engine = RiskEngine(portfolio_df)
