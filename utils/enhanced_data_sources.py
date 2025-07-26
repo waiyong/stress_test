@@ -36,6 +36,7 @@ class EnhancedDataSourceManager:
         self.last_full_refresh = None
         self.refresh_threshold_hours = 24  # Force full refresh after 24 hours
         self.backfill_start_date = "2018-01-01"  # Default backfill start date
+        self.data_quality_threshold_days = 180  # Force full refresh if historical data >180 days old
     
     def set_backfill_start_date(self, start_date: str):
         """Set the start date for full refresh backfill"""
@@ -93,6 +94,47 @@ class EnhancedDataSourceManager:
         except Exception as e:
             logger.warning(f"Could not determine refresh status: {e}")
             return True  # Default to refresh if unclear
+
+    def _get_existing_data_age_days(self) -> int:
+        """Get age of existing historical dataset in days"""
+        try:
+            metadata_file = self.asset_manager.metadata_dir / "data_status.json"
+            metadata = self.asset_manager._load_json(metadata_file)
+            
+            if not metadata or not metadata.get('last_full_refresh'):
+                return float('inf')  # Never refreshed = infinite age
+            
+            last_refresh = datetime.fromisoformat(metadata['last_full_refresh'])
+            return (datetime.now() - last_refresh).days
+            
+        except Exception as e:
+            logger.warning(f"Could not determine data age: {e}")
+            return float('inf')  # Default to infinite age if unclear
+    
+    def _get_existing_coverage(self, index_name: str) -> Optional[Dict[str, str]]:
+        """Check existing data coverage for an index"""
+        try:
+            # Check current month file first
+            current_file = self.asset_manager.indices_dir / f"{index_name}_{self.asset_manager.current_month}.json"
+            data = self.asset_manager._load_json(current_file)
+            
+            if not data or not data.get('price_history'):
+                return None
+            
+            # Get date range from price history
+            dates = list(data['price_history'].keys())
+            if not dates:
+                return None
+                
+            return {
+                'earliest_date': min(dates),
+                'latest_date': max(dates),
+                'data_points': len(dates)
+            }
+            
+        except Exception as e:
+            logger.debug(f"Could not determine existing coverage for {index_name}: {e}")
+            return None
     
     def _fetch_full_market_data(self) -> Dict[str, Any]:
         """Fetch complete market data from OpenBB Platform and save to asset storage"""
@@ -101,13 +143,23 @@ class EnhancedDataSourceManager:
             return self.asset_manager.get_current_market_data()
         
         try:
+            # Intelligent backfill decision
+            data_age_days = self._get_existing_data_age_days()
+            
+            if data_age_days > self.data_quality_threshold_days:
+                logger.info(f"Historical data is {data_age_days} days old (>{self.data_quality_threshold_days}), performing full refresh for data quality")
+                use_full_refresh = True
+            else:
+                logger.info(f"Historical data is {data_age_days} days old (<{self.data_quality_threshold_days}), using incremental backfill")
+                use_full_refresh = False
+            
             # Fetch each asset type
             singapore_rates = self._fetch_singapore_rates_openbb()
             currency_rates = self._fetch_currency_rates_openbb()
             bond_yields = self._fetch_bond_yields_openbb()
             
-            # Fetch market indices with full historical data
-            indices_data = self._fetch_market_indices_openbb()
+            # Fetch market indices with intelligent backfill
+            indices_data = self._fetch_market_indices_openbb(force_full_refresh=use_full_refresh)
             
             # Save to asset-based storage
             date_str = datetime.now().strftime("%Y-%m-%d")
@@ -121,8 +173,9 @@ class EnhancedDataSourceManager:
             for index_name, index_data in indices_data.items():
                 self.asset_manager.save_index_data(index_name, index_data, date_str)
             
-            # Update metadata
-            self.asset_manager.update_metadata("full_update")
+            # Update metadata with appropriate refresh type
+            refresh_type = "full_refresh" if use_full_refresh else "incremental_backfill"
+            self.asset_manager.update_metadata(refresh_type)
             self.last_full_refresh = datetime.now()
             
             # Return aggregated data for immediate use
@@ -300,13 +353,12 @@ class EnhancedDataSourceManager:
             "20y_sgs": 0.041
         }
     
-    def _fetch_market_indices_openbb(self) -> Dict[str, Dict[str, Any]]:
+    def _fetch_market_indices_openbb(self, force_full_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
         """Fetch market indices from OpenBB Platform with full historical data"""
         if not OPENBB_AVAILABLE:
             return self._get_mock_market_indices()
             
         try:
-            start_date = self.backfill_start_date
             indices_data = {}
             
             tickers = {
@@ -318,10 +370,43 @@ class EnhancedDataSourceManager:
             
             for index_name, ticker in tickers.items():
                 try:
-                    hist_data = obb.equity.price.historical(
-                        symbol=ticker,
-                        start_date=start_date
-                    )
+                    # Intelligent backfill: determine date range to fetch
+                    if force_full_refresh:
+                        # Full refresh: fetch complete history
+                        start_date = self.backfill_start_date
+                        logger.info(f"Full refresh for {index_name}: fetching from {start_date}")
+                    else:
+                        # Incremental backfill: check existing coverage and fetch gaps
+                        existing_coverage = self._get_existing_coverage(index_name)
+                        if existing_coverage and existing_coverage['earliest_date']:
+                            existing_start = existing_coverage['earliest_date']
+                            if self.backfill_start_date < existing_start:
+                                # Fetch only the gap
+                                start_date = self.backfill_start_date
+                                end_date = existing_start
+                                logger.info(f"Incremental backfill for {index_name}: fetching gap {start_date} to {end_date}")
+                            else:
+                                # No backfill needed, skip API call
+                                logger.info(f"No backfill needed for {index_name}, existing coverage from {existing_start}")
+                                continue
+                        else:
+                            # No existing data, fetch complete history
+                            start_date = self.backfill_start_date
+                            end_date = None
+                            logger.info(f"No existing data for {index_name}: fetching from {start_date}")
+                    
+                    # Fetch historical data from API
+                    if force_full_refresh or not existing_coverage:
+                        hist_data = obb.equity.price.historical(
+                            symbol=ticker,
+                            start_date=start_date
+                        )
+                    else:
+                        hist_data = obb.equity.price.historical(
+                            symbol=ticker,
+                            start_date=start_date,
+                            end_date=end_date
+                        )
                     
                     if hist_data and hasattr(hist_data, 'results'):
                         df = pd.DataFrame([vars(result) for result in hist_data.results])

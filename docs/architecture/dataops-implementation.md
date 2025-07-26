@@ -114,9 +114,11 @@ data/market_cache/
 
 ### **Full Refresh** (Weekly/On-demand)
 - **Frequency**: Weekly or manual trigger
-- **Scope**: Complete historical data and metrics recalculation  
-- **Performance**: ~30 seconds, comprehensive data
-- **Use Case**: New metrics, data quality assurance
+- **Scope**: Intelligent hybrid approach - incremental backfill or complete refresh
+- **Performance**: 
+  - **Smart Incremental** (<180 days old): ~10 seconds, 50 API calls
+  - **Full Quality Refresh** (>180 days old): ~30 seconds, 1000 API calls
+- **Use Case**: New metrics, data quality assurance, efficient backfilling
 
 ## 🏃‍♂️ **Getting Started**
 

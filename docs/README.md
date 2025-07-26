@@ -90,6 +90,12 @@ Technical implementation details
 - OpenBB Platform integration for real market data
 - Performance optimizations and reliability features
 
+### 🔧 [Operations](operations/)
+Operational procedures and troubleshooting
+- Data management runbook with refresh scenarios
+- Backfill procedures and API usage guidelines
+- Troubleshooting common data issues
+
 ### 📋 [Project Management](project-management/)
 Project planning and progress tracking
 - Master project plan and roadmap
