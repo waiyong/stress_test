@@ -83,7 +83,93 @@ data/market_cache/
 ✅ **Parallel Processing**: Update multiple assets simultaneously  
 ✅ **Automated Cleanup**: Old files removed automatically  
 
-## 📋 **Current Data Coverage**
+## 📋 **Data Schema & Structure**
+
+### **Market Indices** (`indices/[asset]_YYYY-MM.json`)
+```json
+{
+  "current_price": 4261.06,
+  "last_updated": "2025-07-27T19:50:56.935601",
+  "historical_data": {
+    "dates": ["2018-01-02", "2018-01-03", "...", "2025-07-27"],
+    "prices": [3430.30, 3464.28, "...", 4261.06],
+    "returns": [0.0, 0.0099, "...", 0.0012],
+    "volumes": [1234567, 1456789, "...", 2345678],
+    "total_days": 1898
+  },
+  "computed_metrics": {
+    "1y_return": 0.2421828988544116,
+    "1y_volatility": 0.13889884145429005,
+    "max_drawdown": -0.38221107013302846
+  },
+  "metadata": {
+    "asset_type": "market_index",
+    "index_name": "STI", 
+    "data_points": 1898,
+    "earliest_date": "2018-01-02",
+    "latest_date": "2025-07-27"
+  }
+}
+```
+
+### **Currency Rates** (`currencies/[pair]_YYYY-MM.json`)
+```json
+{
+  "current_rate": 0.7807,
+  "last_updated": "2025-07-27T19:50:56.927951",
+  "historical_data": {
+    "dates": ["2018-01-02", "2018-01-03", "...", "2025-07-27"],
+    "sgd_usd_rates": [0.7456, 0.7423, "...", 0.7807],
+    "usd_sgd_rates": [1.3416, 1.3463, "...", 1.2809],
+    "total_days": 1898
+  },
+  "metadata": {
+    "asset_type": "currency_rates",
+    "currency_pair": "SGDUSD",
+    "data_points": 1898,
+    "earliest_date": "2018-01-02", 
+    "latest_date": "2025-07-27"
+  }
+}
+```
+
+### **Singapore Rates** (`rates/singapore_rates_YYYY-MM.json`)
+```json
+{
+  "current_rates": {
+    "sora_rate": 0.0325,
+    "fixed_deposit_rate": 0.042,
+    "1y_sgs": 0.029,
+    "10y_sgs": 0.039
+  },
+  "last_updated": "2025-07-27T19:50:56.935601",
+  "historical_data": {
+    "dates": ["2018-01-02", "2018-01-03", "...", "2025-07-27"],
+    "sora_rates": [0.0156, 0.0158, "...", 0.0325],
+    "fd_rates": [0.025, 0.025, "...", 0.042],
+    "1y_sgs_rates": [0.021, 0.021, "...", 0.029],
+    "10y_sgs_rates": [0.032, 0.033, "...", 0.039],
+    "total_days": 1898
+  },
+  "metadata": {
+    "asset_type": "interest_rates",
+    "data_points": 1898,
+    "earliest_date": "2018-01-02",
+    "latest_date": "2025-07-27"
+  }
+}
+```
+
+### **Hot Data Cache** (`current/[asset]_current.json`)
+```json
+{
+  "current_price": 4261.06,
+  "last_updated": "2025-07-27T19:50:56.935601",
+  "source_file": "STI_2025-07.json"
+}
+```
+
+## 📊 **Current Data Coverage**
 
 ### **Real Market Data** (via OpenBB Platform)
 - **STI**: Singapore Straits Times Index - $4,261.06
