@@ -101,10 +101,10 @@ class EnhancedDataSourceManager:
             metadata_file = self.asset_manager.metadata_dir / "data_status.json"
             metadata = self.asset_manager._load_json(metadata_file)
             
-            if not metadata or not metadata.get('last_full_refresh'):
+            if not metadata or not metadata.get('last_full_update'):
                 return float('inf')  # Never refreshed = infinite age
             
-            last_refresh = datetime.fromisoformat(metadata['last_full_refresh'])
+            last_refresh = datetime.fromisoformat(metadata['last_full_update'])
             return (datetime.now() - last_refresh).days
             
         except Exception as e:
