@@ -153,10 +153,10 @@ class EnhancedDataSourceManager:
                 logger.info(f"Historical data is {data_age_days} days old (<{self.data_quality_threshold_days}), using incremental backfill")
                 use_full_refresh = False
             
-            # Fetch each asset type
-            singapore_rates = self._fetch_singapore_rates_openbb()
-            currency_rates = self._fetch_currency_rates_openbb()
-            bond_yields = self._fetch_bond_yields_openbb()
+            # Fetch each asset type with historical data
+            singapore_rates = self._fetch_singapore_rates_openbb(historical=True)
+            currency_rates = self._fetch_currency_rates_openbb(historical=True)
+            bond_yields = self._fetch_bond_yields_openbb(historical=True)
             
             # Fetch market indices with intelligent backfill
             indices_data = self._fetch_market_indices_openbb(force_full_refresh=use_full_refresh)
@@ -242,12 +242,18 @@ class EnhancedDataSourceManager:
             logger.error(f"Incremental update failed: {e}")
             return self.asset_manager.get_current_market_data()
     
-    def _fetch_singapore_rates_openbb(self) -> Dict[str, float]:
-        """Fetch Singapore interest rates from OpenBB Platform"""
+    def _fetch_singapore_rates_openbb(self, historical: bool = False) -> Dict[str, Any]:
+        """Fetch Singapore interest rates from OpenBB Platform with optional historical data"""
         if not OPENBB_AVAILABLE:
-            return self._get_mock_singapore_rates()
+            return self._get_mock_singapore_rates(historical)
             
         try:
+            if historical:
+                # For historical data, generate realistic rate trends
+                # Note: OpenBB may not have comprehensive Singapore rate history
+                logger.info("Generating historical Singapore rates (OpenBB historical rates limited)")
+                return self._get_mock_singapore_rates(historical)
+            
             rates = {}
             
             # Try multiple methods to get Singapore rates
@@ -277,27 +283,95 @@ class EnhancedDataSourceManager:
                 
         except Exception as e:
             logger.warning(f"Failed to fetch Singapore rates: {e}")
-            return self._get_mock_singapore_rates()
+            return self._get_mock_singapore_rates(historical)
     
-    def _get_mock_singapore_rates(self) -> Dict[str, float]:
+    def _get_mock_singapore_rates(self, historical: bool = False) -> Dict[str, Any]:
         """Mock Singapore rates for fallback"""
-        return {
-            "sora_rate": 0.0325,
-            "3m_treasury": 0.0340,
-            "6m_treasury": 0.0355, 
-            "12m_treasury": 0.0370,
-            "fd_rates_average": 0.0375
-        }
+        if historical:
+            # Generate mock historical rate data
+            from datetime import datetime, timedelta
+            import numpy as np
+            
+            if hasattr(self, 'backfill_start_date'):
+                start = datetime.strptime(self.backfill_start_date, '%Y-%m-%d')
+            else:
+                start = datetime.now() - timedelta(days=365)
+            
+            end = datetime.now()
+            dates = pd.date_range(start=start, end=end, freq='D')
+            dates_str = [d.strftime('%Y-%m-%d') for d in dates]
+            
+            # Generate realistic rate trends (Singapore raised rates during 2022-2024)
+            n_days = len(dates_str)
+            base_sora = 0.015  # Start lower
+            trend = np.linspace(0, 0.017, n_days)  # Gradual increase
+            noise = np.random.normal(0, 0.002, n_days)
+            
+            sora_rates = [max(0.01, min(0.04, base_sora + t + n)) for t, n in zip(trend, noise)]
+            fd_rates = [rate + 0.008 for rate in sora_rates]  # FD typically higher
+            treasury_3m = [rate + 0.003 for rate in sora_rates]
+            treasury_6m = [rate + 0.005 for rate in sora_rates]
+            treasury_12m = [rate + 0.007 for rate in sora_rates]
+            
+            current_rates = {
+                "sora_rate": sora_rates[-1],
+                "fixed_deposit_rate": fd_rates[-1],
+                "1y_sgs": treasury_12m[-1],
+                "10y_sgs": treasury_12m[-1] + 0.015
+            }
+            
+            return {
+                "current_rates": current_rates,
+                "historical_data": {
+                    "dates": dates_str,
+                    "sora_rates": sora_rates,
+                    "fd_rates": fd_rates,
+                    "1y_sgs_rates": treasury_12m,
+                    "10y_sgs_rates": [rate + 0.015 for rate in treasury_12m],
+                    "total_days": len(dates_str)
+                },
+                "computed_metrics": self._compute_rates_metrics(sora_rates, fd_rates)
+            }
+        else:
+            return {
+                "sora_rate": 0.0325,
+                "3m_treasury": 0.0340,
+                "6m_treasury": 0.0355, 
+                "12m_treasury": 0.0370,
+                "fd_rates_average": 0.0375
+            }
     
-    def _fetch_currency_rates_openbb(self) -> Dict[str, float]:
-        """Fetch SGD exchange rates from OpenBB Platform"""
+    def _compute_rates_metrics(self, sora_rates: list, fd_rates: list) -> Dict[str, float]:
+        """Compute interest rate metrics"""
+        try:
+            sora_changes = np.diff(sora_rates)
+            fd_changes = np.diff(fd_rates)
+            
+            return {
+                "sora_volatility": float(np.std(sora_changes) * np.sqrt(252)),
+                "fd_volatility": float(np.std(fd_changes) * np.sqrt(252)),
+                "sora_1y_change": float(sora_rates[-1] - sora_rates[0]) if len(sora_rates) > 1 else 0.0,
+                "fd_1y_change": float(fd_rates[-1] - fd_rates[0]) if len(fd_rates) > 1 else 0.0
+            }
+        except Exception as e:
+            logger.warning(f"Failed to compute rates metrics: {e}")
+            return {"sora_volatility": 0.008, "fd_volatility": 0.005}
+    
+    def _fetch_currency_rates_openbb(self, historical: bool = False) -> Dict[str, Any]:
+        """Fetch SGD exchange rates from OpenBB Platform with optional historical data"""
         if not OPENBB_AVAILABLE:
-            return self._get_mock_currency_rates()
+            return self._get_mock_currency_rates(historical)
             
         try:
-            # Get recent SGD/USD rate
-            end_date = datetime.now().strftime("%Y-%m-%d")
-            start_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+            if historical and hasattr(self, 'backfill_start_date'):
+                # Fetch historical data for full refresh
+                start_date = self.backfill_start_date
+                end_date = datetime.now().strftime("%Y-%m-%d")
+                logger.info(f"Fetching historical currency data from {start_date} to {end_date}")
+            else:
+                # Get recent SGD/USD rate only
+                end_date = datetime.now().strftime("%Y-%m-%d")
+                start_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
             
             sgd_usd_data = obb.currency.price.historical(
                 symbol="SGDUSD=X", 
@@ -306,52 +380,200 @@ class EnhancedDataSourceManager:
             )
             
             if sgd_usd_data and hasattr(sgd_usd_data, 'results') and len(sgd_usd_data.results) > 0:
-                latest_result = sgd_usd_data.results[-1]
-                if hasattr(latest_result, 'close'):
-                    sgd_usd_rate = float(latest_result.close)
-                    logger.info(f"Successfully fetched SGD/USD rate: {sgd_usd_rate:.4f}")
+                if historical and len(sgd_usd_data.results) > 1:
+                    # Process historical data
+                    df = pd.DataFrame([vars(result) for result in sgd_usd_data.results])
+                    df = df.sort_values('date')
+                    df['date'] = pd.to_datetime(df['date'])
+                    
+                    dates = df['date'].dt.strftime('%Y-%m-%d').tolist()
+                    sgd_usd_rates = df['close'].tolist()
+                    usd_sgd_rates = (1.0 / df['close']).tolist()
+                    
+                    current_rate = float(df['close'].iloc[-1])
+                    computed_metrics = self._compute_currency_metrics(df)
+                    
                     return {
-                        "sgd_usd": sgd_usd_rate,
-                        "usd_sgd": 1.0 / sgd_usd_rate
+                        "current_rate": current_rate,
+                        "historical_data": {
+                            "dates": dates,
+                            "sgd_usd_rates": sgd_usd_rates,
+                            "usd_sgd_rates": usd_sgd_rates,
+                            "total_days": len(dates)
+                        },
+                        "computed_metrics": computed_metrics
                     }
+                else:
+                    # Current rate only
+                    latest_result = sgd_usd_data.results[-1]
+                    if hasattr(latest_result, 'close'):
+                        sgd_usd_rate = float(latest_result.close)
+                        logger.info(f"Successfully fetched SGD/USD rate: {sgd_usd_rate:.4f}")
+                        return {
+                            "sgd_usd": sgd_usd_rate,
+                            "usd_sgd": 1.0 / sgd_usd_rate
+                        }
             
             logger.warning("No currency data returned from OpenBB")
-            return self._get_mock_currency_rates()
+            return self._get_mock_currency_rates(historical)
                 
         except Exception as e:
             logger.warning(f"Failed to fetch currency rates: {e}")
-            return self._get_mock_currency_rates()
+            return self._get_mock_currency_rates(historical)
     
-    def _get_mock_currency_rates(self) -> Dict[str, float]:
+    def _get_mock_currency_rates(self, historical: bool = False) -> Dict[str, Any]:
         """Mock currency rates for fallback"""
-        return {
-            "sgd_usd": 0.7420,
-            "usd_sgd": 1.3477
-        }
+        if historical:
+            # Generate mock historical data
+            from datetime import datetime, timedelta
+            import numpy as np
+            
+            if hasattr(self, 'backfill_start_date'):
+                start = datetime.strptime(self.backfill_start_date, '%Y-%m-%d')
+            else:
+                start = datetime.now() - timedelta(days=365)
+            
+            end = datetime.now()
+            dates = pd.date_range(start=start, end=end, freq='D')
+            dates_str = [d.strftime('%Y-%m-%d') for d in dates]
+            
+            # Generate realistic SGD/USD rates around 0.74
+            base_rate = 0.7420
+            rates = [base_rate + np.random.normal(0, 0.02) for _ in dates]
+            rates = [max(0.70, min(0.78, rate)) for rate in rates]  # Bound rates
+            
+            return {
+                "current_rate": rates[-1],
+                "historical_data": {
+                    "dates": dates_str,
+                    "sgd_usd_rates": rates,
+                    "usd_sgd_rates": [1.0/rate for rate in rates],
+                    "total_days": len(dates_str)
+                },
+                "computed_metrics": {
+                    "volatility": 0.08,
+                    "1y_change": 0.02
+                }
+            }
+        else:
+            return {
+                "sgd_usd": 0.7420,
+                "usd_sgd": 1.3477
+            }
     
-    def _fetch_bond_yields_openbb(self) -> Dict[str, float]:
-        """Fetch Singapore government bond yields from OpenBB Platform"""
+    def _compute_currency_metrics(self, df: pd.DataFrame) -> Dict[str, float]:
+        """Compute currency risk metrics from exchange rate data"""
+        try:
+            rates = df['close']
+            returns = rates.pct_change().dropna()
+            
+            # Annualized volatility (252 trading days)
+            volatility = returns.std() * np.sqrt(252) if len(returns) > 1 else 0.0
+            
+            # Year-over-year change
+            if len(rates) > 252:
+                yoy_change = (rates.iloc[-1] - rates.iloc[-252]) / rates.iloc[-252]
+            else:
+                yoy_change = (rates.iloc[-1] - rates.iloc[0]) / rates.iloc[0]
+            
+            return {
+                "volatility": float(volatility),
+                "1y_change": float(yoy_change),
+                "max_rate": float(rates.max()),
+                "min_rate": float(rates.min())
+            }
+        except Exception as e:
+            logger.warning(f"Failed to compute currency metrics: {e}")
+            return {"volatility": 0.08, "1y_change": 0.02}
+    
+    def _fetch_bond_yields_openbb(self, historical: bool = False) -> Dict[str, Any]:
+        """Fetch Singapore government bond yields from OpenBB Platform with optional historical data"""
         if not OPENBB_AVAILABLE:
-            return self._get_mock_bond_yields()
+            return self._get_mock_bond_yields(historical)
             
         try:
             # Try to get Singapore government bond yields
-            # Note: This may not be available directly, using mock for now
+            # Note: OpenBB may not have direct Singapore bond yield data
             logger.info("Using mock bond yields (OpenBB Singapore bonds not directly available)")
-            return self._get_mock_bond_yields()
+            return self._get_mock_bond_yields(historical)
                 
         except Exception as e:
             logger.warning(f"Failed to fetch bond yields: {e}")
-            return self._get_mock_bond_yields()
+            return self._get_mock_bond_yields(historical)
     
-    def _get_mock_bond_yields(self) -> Dict[str, float]:
+    def _get_mock_bond_yields(self, historical: bool = False) -> Dict[str, Any]:
         """Mock bond yields for fallback"""
-        return {
-            "2y_sgs": 0.032,
-            "5y_sgs": 0.035,
-            "10y_sgs": 0.039,
-            "20y_sgs": 0.041
-        }
+        if historical:
+            # Generate mock historical bond yield data
+            from datetime import datetime, timedelta
+            import numpy as np
+            
+            if hasattr(self, 'backfill_start_date'):
+                start = datetime.strptime(self.backfill_start_date, '%Y-%m-%d')
+            else:
+                start = datetime.now() - timedelta(days=365)
+            
+            end = datetime.now()
+            dates = pd.date_range(start=start, end=end, freq='D')
+            dates_str = [d.strftime('%Y-%m-%d') for d in dates]
+            
+            # Generate realistic bond yield trends (yields rose 2022-2024)
+            n_days = len(dates_str)
+            base_2y = 0.025  # Start lower
+            trend = np.linspace(0, 0.015, n_days)  # Gradual increase
+            noise = np.random.normal(0, 0.003, n_days)
+            
+            yields_2y = [max(0.015, min(0.045, base_2y + t + n)) for t, n in zip(trend, noise)]
+            yields_5y = [y + 0.005 for y in yields_2y]  # 5Y typically higher
+            yields_10y = [y + 0.010 for y in yields_2y]  # 10Y even higher
+            yields_20y = [y + 0.012 for y in yields_2y]  # 20Y highest
+            
+            current_yields = {
+                "2y_sgs": yields_2y[-1],
+                "5y_sgs": yields_5y[-1],
+                "10y_sgs": yields_10y[-1],
+                "20y_sgs": yields_20y[-1]
+            }
+            
+            return {
+                "current_yields": current_yields,
+                "historical_data": {
+                    "dates": dates_str,
+                    "2y_yields": yields_2y,
+                    "5y_yields": yields_5y,
+                    "10y_yields": yields_10y,
+                    "20y_yields": yields_20y,
+                    "total_days": len(dates_str)
+                },
+                "computed_metrics": self._compute_bond_metrics(yields_2y, yields_10y)
+            }
+        else:
+            return {
+                "2y_sgs": 0.032,
+                "5y_sgs": 0.035,
+                "10y_sgs": 0.039,
+                "20y_sgs": 0.041
+            }
+    
+    def _compute_bond_metrics(self, yields_2y: list, yields_10y: list) -> Dict[str, float]:
+        """Compute bond yield metrics"""
+        try:
+            changes_2y = np.diff(yields_2y)
+            changes_10y = np.diff(yields_10y)
+            
+            # Yield curve spread (10Y - 2Y)
+            spreads = [y10 - y2 for y2, y10 in zip(yields_2y, yields_10y)]
+            
+            return {
+                "2y_volatility": float(np.std(changes_2y) * np.sqrt(252)),
+                "10y_volatility": float(np.std(changes_10y) * np.sqrt(252)),
+                "yield_curve_spread": float(spreads[-1]) if spreads else 0.007,
+                "2y_1y_change": float(yields_2y[-1] - yields_2y[0]) if len(yields_2y) > 1 else 0.0,
+                "10y_1y_change": float(yields_10y[-1] - yields_10y[0]) if len(yields_10y) > 1 else 0.0
+            }
+        except Exception as e:
+            logger.warning(f"Failed to compute bond metrics: {e}")
+            return {"2y_volatility": 0.005, "10y_volatility": 0.008, "yield_curve_spread": 0.007}
     
     def _fetch_market_indices_openbb(self, force_full_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
         """Fetch market indices from OpenBB Platform with full historical data"""

@@ -86,7 +86,7 @@ class AssetDataManager:
             logger.error(f"Failed to load {file_path}: {e}")
         return None
     
-    def save_singapore_rates(self, rates_data: Dict[str, float], date_str: Optional[str] = None) -> bool:
+    def save_singapore_rates(self, rates_data: Dict[str, Any], date_str: Optional[str] = None) -> bool:
         """Save Singapore interest rates to asset-specific file"""
         if date_str is None:
             date_str = datetime.now().strftime("%Y-%m-%d")
@@ -96,17 +96,30 @@ class AssetDataManager:
         # Load existing data or create new
         existing_data = self._load_json(file_path) or {"rates_history": {}, "metadata": {}}
         
-        # Add new rate data
-        existing_data["rates_history"][date_str] = {
-            **rates_data,
-            "timestamp": datetime.now().isoformat()
-        }
+        # Handle historical data structure vs simple rates
+        if "current_rates" in rates_data and "historical_data" in rates_data:
+            # New historical format
+            existing_data["historical_data"] = rates_data["historical_data"]
+            existing_data["computed_metrics"] = rates_data.get("computed_metrics", {})
+            
+            # Add current day to rates_history
+            existing_data["rates_history"][date_str] = {
+                **rates_data["current_rates"],
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            # Legacy simple rates format
+            existing_data["rates_history"][date_str] = {
+                **rates_data,
+                "timestamp": datetime.now().isoformat()
+            }
         
         # Update metadata
         existing_data["metadata"] = {
             "asset_type": "singapore_rates",
             "last_updated": datetime.now().isoformat(),
             "data_points": len(existing_data["rates_history"]),
+            "has_historical": "historical_data" in existing_data,
             "date_range": {
                 "start": min(existing_data["rates_history"].keys()),
                 "end": max(existing_data["rates_history"].keys())
@@ -117,8 +130,10 @@ class AssetDataManager:
         
         # Also save to current/ for quick access
         current_file = self.current_dir / "singapore_rates_current.json"
+        current_rates = rates_data.get("current_rates", rates_data)
         current_data = {
-            "rates": rates_data,
+            "rates": current_rates,
+            "computed_metrics": rates_data.get("computed_metrics", {}),
             "last_updated": datetime.now().isoformat(),
             "source_file": f"singapore_rates_{self.current_month}.json"
         }
@@ -181,7 +196,7 @@ class AssetDataManager:
         logger.info(f"Saved {index_name} data for {date_str}")
         return True
     
-    def save_currency_data(self, currency_pair: str, rate_data: Dict[str, float], date_str: Optional[str] = None) -> bool:
+    def save_currency_data(self, currency_pair: str, rate_data: Dict[str, Any], date_str: Optional[str] = None) -> bool:
         """Save currency exchange rates to asset-specific file"""
         if date_str is None:
             date_str = datetime.now().strftime("%Y-%m-%d")
@@ -191,26 +206,43 @@ class AssetDataManager:
         # Load existing data or create new
         existing_data = self._load_json(file_path) or {"rates_history": {}, "metadata": {}}
         
-        # Add new rate data with timestamp
-        existing_data["rates_history"][date_str] = {
-            **rate_data,
-            "timestamp": datetime.now().isoformat()
-        }
+        # Handle historical data structure vs simple rates
+        if "current_rate" in rate_data and "historical_data" in rate_data:
+            # New historical format
+            existing_data["historical_data"] = rate_data["historical_data"]
+            existing_data["computed_metrics"] = rate_data.get("computed_metrics", {})
+            
+            # Add current day to rates_history
+            existing_data["rates_history"][date_str] = {
+                "sgd_usd": rate_data["current_rate"],
+                "usd_sgd": 1.0 / rate_data["current_rate"],
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            # Legacy simple rates format
+            existing_data["rates_history"][date_str] = {
+                **rate_data,
+                "timestamp": datetime.now().isoformat()
+            }
         
         # Update metadata
         existing_data["metadata"] = {
             "asset_type": "currency_rates",
             "currency_pair": currency_pair,
             "last_updated": datetime.now().isoformat(),
-            "data_points": len(existing_data["rates_history"])
+            "data_points": len(existing_data["rates_history"]),
+            "has_historical": "historical_data" in existing_data
         }
         
         self._save_json(file_path, existing_data)
         
         # Save to current/
         current_file = self.current_dir / f"{currency_pair}_current.json"
+        current_rates = {"sgd_usd": rate_data.get("current_rate", rate_data.get("sgd_usd", 0.74)), 
+                        "usd_sgd": 1.0/rate_data.get("current_rate", rate_data.get("sgd_usd", 0.74))} if "current_rate" in rate_data else rate_data
         current_data = {
-            "rates": rate_data,
+            "rates": current_rates,
+            "computed_metrics": rate_data.get("computed_metrics", {}),
             "last_updated": datetime.now().isoformat(),
             "source_file": f"{currency_pair}_{self.current_month}.json"
         }
@@ -219,7 +251,7 @@ class AssetDataManager:
         logger.info(f"Saved {currency_pair} rates for {date_str}")
         return True
     
-    def save_bond_data(self, bond_data: Dict[str, float], date_str: Optional[str] = None) -> bool:
+    def save_bond_data(self, bond_data: Dict[str, Any], date_str: Optional[str] = None) -> bool:
         """Save bond yield data to asset-specific file"""
         if date_str is None:
             date_str = datetime.now().strftime("%Y-%m-%d")
@@ -229,25 +261,40 @@ class AssetDataManager:
         # Load existing data or create new
         existing_data = self._load_json(file_path) or {"yields_history": {}, "metadata": {}}
         
-        # Add new yield data
-        existing_data["yields_history"][date_str] = {
-            **bond_data,
-            "timestamp": datetime.now().isoformat()
-        }
+        # Handle historical data structure vs simple yields
+        if "current_yields" in bond_data and "historical_data" in bond_data:
+            # New historical format
+            existing_data["historical_data"] = bond_data["historical_data"]
+            existing_data["computed_metrics"] = bond_data.get("computed_metrics", {})
+            
+            # Add current day to yields_history
+            existing_data["yields_history"][date_str] = {
+                **bond_data["current_yields"],
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            # Legacy simple yields format
+            existing_data["yields_history"][date_str] = {
+                **bond_data,
+                "timestamp": datetime.now().isoformat()
+            }
         
         # Update metadata
         existing_data["metadata"] = {
             "asset_type": "bond_yields",
             "last_updated": datetime.now().isoformat(),
-            "data_points": len(existing_data["yields_history"])
+            "data_points": len(existing_data["yields_history"]),
+            "has_historical": "historical_data" in existing_data
         }
         
         self._save_json(file_path, existing_data)
         
         # Save to current/
         current_file = self.current_dir / "singapore_bonds_current.json"
+        current_yields = bond_data.get("current_yields", bond_data)
         current_data = {
-            "yields": bond_data,
+            "yields": current_yields,
+            "computed_metrics": bond_data.get("computed_metrics", {}),
             "last_updated": datetime.now().isoformat(),
             "source_file": f"singapore_bonds_{self.current_month}.json"
         }

@@ -59,6 +59,7 @@ def update_market_data(update_type: str = "incremental", start_date: str = "2018
         
         # Set start date for full refresh
         if update_type == "full_refresh":
+            logger.info(f"Setting backfill start date to: {start_date}")
             data_manager.set_backfill_start_date(start_date)
         
         # Determine update parameters
@@ -116,13 +117,19 @@ def validate_market_data(data: dict) -> dict:
     # Check Singapore rates
     if 'singapore_rates' in data:
         rates = data['singapore_rates']
-        required_rates = ['sora_rate', 'fd_rates_average']
+        # Support both old and new field names
+        required_rates = ['sora_rate']
+        optional_rates = ['fd_rates_average', 'fixed_deposit_rate']
         
         for rate in required_rates:
             if rate not in rates:
                 errors.append(f"Missing Singapore rate: {rate}")
             elif not isinstance(rates[rate], (int, float)) or rates[rate] <= 0:
                 errors.append(f"Invalid Singapore rate value: {rate}={rates[rate]}")
+        
+        # Check that at least one FD rate field exists
+        if not any(rate in rates for rate in optional_rates):
+            errors.append(f"Missing fixed deposit rate (expected one of: {optional_rates})")
     
     # Check market indices
     if 'market_indices' in data:
@@ -265,7 +272,17 @@ def main():
             return 1
     
     # Perform data update
-    success = update_market_data(args.type, getattr(args, 'start_date', '2018-01-01'))
+    start_date = args.start_date if hasattr(args, 'start_date') else '2018-01-01'
+    logger.info(f"Using start date: {start_date}")
+    
+    # Validate start date format
+    try:
+        datetime.strptime(start_date, '%Y-%m-%d')
+    except ValueError:
+        logger.error(f"Invalid start date format: {start_date}. Expected YYYY-MM-DD")
+        return 1
+    
+    success = update_market_data(args.type, start_date)
     
     # Cleanup if requested and update was successful
     if args.cleanup and success:
