@@ -89,11 +89,26 @@ jobs:
         echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
         
         if [ -f "data/market_cache/current/STI_current.json" ]; then
-          STI_PRICE=$(python -c "import json; data=json.load(open('data/market_cache/current/STI_current.json')); print(f\"${data['current_price']:.2f}\")")
+          STI_PRICE=$(python -c "
+import json
+try:
+    data = json.load(open('data/market_cache/current/STI_current.json'))
+    price = data.get('current_price', 0)
+    print(f'\\${price:.2f}')
+except:
+    print('N/A')
+")
           echo "- **STI Price**: $STI_PRICE" >> $GITHUB_STEP_SUMMARY
         fi
         
         if [ -f "data/market_cache/metadata/data_status.json" ]; then
-          LAST_UPDATE=$(python -c "import json; data=json.load(open('data/market_cache/metadata/data_status.json')); print(data.get('last_incremental_update', 'N/A'))")
+          LAST_UPDATE=$(python -c "
+import json
+try:
+    data = json.load(open('data/market_cache/metadata/data_status.json'))
+    print(data.get('last_full_update', data.get('last_incremental_update', 'N/A')))
+except:
+    print('N/A')
+")
           echo "- **Last Update**: $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
         fi
