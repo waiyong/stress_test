@@ -1,5 +1,5 @@
-# Cache files (market data needed for Streamlit Cloud)
-# data/market_cache/  # Commented out - Streamlit Cloud needs this data
+# Cache files (market data needed for Streamlit Cloud)  
+# data/market_cache/  # Commented out - remote workflow needs to commit this data
 
 # Python
 __pycache__/
