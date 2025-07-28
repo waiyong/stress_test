@@ -40,6 +40,7 @@ def setup_environment():
     
     logger.info("Environment setup completed")
 
+
 def update_market_data(update_type: str = "incremental", start_date: str = "2018-01-01") -> bool:
     """
     Update market data using enhanced data source manager

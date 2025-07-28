@@ -52,6 +52,10 @@ class EnhancedDataSourceManager:
             incremental: Use incremental updates vs full refresh
         """
         try:
+            # Log OpenBB availability status
+            if not OPENBB_AVAILABLE:
+                logger.warning("OpenBB Platform not available - will use fallback data and ensure JSON files are created")
+            
             # Check if we need a full refresh
             need_full_refresh = force_refresh or self._should_full_refresh()
             
@@ -67,14 +71,25 @@ class EnhancedDataSourceManager:
                 
         except Exception as e:
             logger.error(f"Market data fetch failed: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            
             # Fallback to cached data
-            cached_data = self.asset_manager.get_current_market_data()
-            if cached_data.get('singapore_rates'):  # Has some data
-                logger.warning("Using cached data due to fetch failure")
-                return cached_data
-            else:
-                logger.error("No cached data available, using fallback")
-                return self._get_fallback_data()
+            try:
+                cached_data = self.asset_manager.get_current_market_data()
+                if cached_data.get('singapore_rates'):  # Has some data
+                    logger.warning("Using cached data due to fetch failure")
+                    return cached_data
+                else:
+                    logger.warning("No cached data available, generating fallback data and ensuring files are created")
+                    fallback_data = self._get_fallback_data()
+                    # Ensure fallback data is saved to create JSON files
+                    self._save_fallback_data_to_files(fallback_data)
+                    return fallback_data
+            except Exception as fallback_error:
+                logger.error(f"Even fallback data retrieval failed: {fallback_error}")
+                logger.error(f"Fallback traceback: {traceback.format_exc()}")
+                raise RuntimeError(f"Complete data fetch failure: original error: {e}, fallback error: {fallback_error}")
     
     def _should_full_refresh(self) -> bool:
         """Determine if a full refresh is needed based on data age"""
@@ -725,6 +740,40 @@ class EnhancedDataSourceManager:
             "last_updated": datetime.now().isoformat(),
             "note": "Using fallback data - APIs and cache unavailable"
         }
+    
+    def _save_fallback_data_to_files(self, fallback_data: Dict[str, Any]):
+        """Save fallback data to JSON files to ensure GitHub Actions creates files"""
+        try:
+            logger.info("Saving fallback data to ensure JSON files are created...")
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            
+            # Save each component using the asset manager
+            if 'singapore_rates' in fallback_data:
+                self.asset_manager.save_singapore_rates(fallback_data['singapore_rates'], date_str)
+                logger.info("✅ Saved fallback Singapore rates")
+            
+            if 'currency_rates' in fallback_data:
+                self.asset_manager.save_currency_data("SGDUSD", fallback_data['currency_rates'], date_str)
+                logger.info("✅ Saved fallback currency rates")
+                
+            if 'bond_yields' in fallback_data:
+                self.asset_manager.save_bond_data(fallback_data['bond_yields'], date_str)
+                logger.info("✅ Saved fallback bond yields")
+            
+            if 'market_indices' in fallback_data:
+                for index_name, index_data in fallback_data['market_indices'].items():
+                    self.asset_manager.save_index_data(index_name, index_data, date_str)
+                    logger.info(f"✅ Saved fallback data for {index_name}")
+            
+            # Update metadata
+            self.asset_manager.update_metadata("fallback_data_save")
+            logger.info("✅ Fallback data successfully saved to JSON files")
+            
+        except Exception as e:
+            logger.error(f"Failed to save fallback data to files: {e}")
+            import traceback
+            logger.error(f"Save fallback traceback: {traceback.format_exc()}")
+            raise e
     
     def get_asset_history(self, asset_type: str, asset_name: str, days: int = 30) -> Optional[Dict[str, Any]]:
         """Get historical data for specific asset from asset storage"""

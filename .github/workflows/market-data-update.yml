@@ -41,6 +41,22 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        echo "Validating critical dependencies..."
+        python -c "import pandas; print('✅ pandas installed')"
+        python -c "import numpy; print('✅ numpy installed')"
+        python -c "
+try:
+    import openbb
+    print('✅ openbb installed successfully')
+except ImportError as e:
+    print('❌ openbb import failed:', str(e))
+    print('Attempting alternative installation...')
+    import subprocess
+    subprocess.run(['pip', 'install', '--upgrade', 'openbb[all]'], check=True)
+    import openbb
+    print('✅ openbb installed after retry')
+"
+        python -c "from utils.enhanced_data_sources import EnhancedDataSourceManager; print('✅ EnhancedDataSourceManager import successful')"
     
     - name: Create data directories
       run: |
@@ -54,35 +70,24 @@ jobs:
     - name: Run incremental market data update
       if: github.event.inputs.update_type != 'full_refresh'
       run: |
-        echo "Starting incremental update"
-        python scripts/update_market_data.py --type incremental --verbose || echo "Script failed with exit code $?"
-        echo "Script completed. Checking for created files:"
-        find data/market_cache -type f -name "*.json" | head -20
+        python scripts/update_market_data.py --type incremental
       env:
         PYTHONPATH: ${{ github.workspace }}
     
     - name: Run full market data refresh
       if: github.event.inputs.update_type == 'full_refresh'
       run: |
-        echo "Starting full refresh with start date: ${{ github.event.inputs.start_date || '2018-01-01' }}"
-        python scripts/update_market_data.py --type full_refresh --start-date "${{ github.event.inputs.start_date || '2018-01-01' }}" --verbose || echo "Script failed with exit code $?"
-        echo "Script completed. Checking for created files:"
-        find data/market_cache -type f -name "*.json" | head -20
+        python scripts/update_market_data.py --type full_refresh --start-date "${{ github.event.inputs.start_date || '2018-01-01' }}"
       env:
         PYTHONPATH: ${{ github.workspace }}
     
     - name: Check for data changes
       id: check_changes
       run: |
-        echo "Current git status:"
-        git status
-        echo "Files in data/market_cache:"
-        find data/market_cache -type f | wc -l
-        echo "Git diff output:"
-        git diff --name-only data/market_cache/ || echo "No changes detected by git diff"
-        git diff --quiet data/market_cache/ || echo "changes=true" >> $GITHUB_OUTPUT
-        echo "GITHUB_OUTPUT contents:"
-        cat $GITHUB_OUTPUT || echo "GITHUB_OUTPUT file not found"
+        # Check for any changes (modified files) or new files in data/market_cache
+        if [ -n "$(git status --porcelain data/market_cache/)" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+        fi
     
     - name: Commit updated market data
       if: steps.check_changes.outputs.changes == 'true'
