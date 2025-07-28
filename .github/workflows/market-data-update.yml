@@ -96,3 +96,4 @@ jobs:
           LAST_UPDATE=$(python -c "import json; data=json.load(open('data/market_cache/metadata/data_status.json')); print(data.get('last_full_update') or data.get('last_incremental_update') or 'N/A')")
           echo "- **Last Update**: $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
         fi
+        
