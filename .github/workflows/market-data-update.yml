@@ -88,12 +88,30 @@ jobs:
         echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
         
         if [ -f "data/market_cache/current/STI_current.json" ]; then
-          STI_PRICE=$(python -c "import json; data=json.load(open('data/market_cache/current/STI_current.json')); print(f'\\${data.get(\"current_price\", 0):.2f}') if 'current_price' in data else print('N/A')")
+          STI_PRICE=$(python -c "
+import json
+try:
+    with open('data/market_cache/current/STI_current.json') as f:
+        data = json.load(f)
+    price = data.get('current_price', 0)
+    print('$' + '{:.2f}'.format(price))
+except:
+    print('N/A')
+")
           echo "- **STI Price**: $STI_PRICE" >> $GITHUB_STEP_SUMMARY
         fi
         
         if [ -f "data/market_cache/metadata/data_status.json" ]; then
-          LAST_UPDATE=$(python -c "import json; data=json.load(open('data/market_cache/metadata/data_status.json')); print(data.get('last_full_update') or data.get('last_incremental_update') or 'N/A')")
+          LAST_UPDATE=$(python -c "
+import json
+try:
+    with open('data/market_cache/metadata/data_status.json') as f:
+        data = json.load(f)
+    update_time = data.get('last_full_update') or data.get('last_incremental_update') or 'N/A'
+    print(update_time)
+except:
+    print('N/A')
+")
           echo "- **Last Update**: $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
         fi
         
