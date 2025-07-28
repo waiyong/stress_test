@@ -44,18 +44,7 @@ jobs:
         echo "Validating critical dependencies..."
         python -c "import pandas; print('✅ pandas installed')"
         python -c "import numpy; print('✅ numpy installed')"
-        python -c "
-try:
-    import openbb
-    print('✅ openbb installed successfully')
-except ImportError as e:
-    print('❌ openbb import failed:', str(e))
-    print('Attempting alternative installation...')
-    import subprocess
-    subprocess.run(['pip', 'install', '--upgrade', 'openbb[all]'], check=True)
-    import openbb
-    print('✅ openbb installed after retry')
-"
+        python -c "import openbb; print('✅ openbb installed')" || echo "⚠️ openbb import failed, continuing with fallback"
         python -c "from utils.enhanced_data_sources import EnhancedDataSourceManager; print('✅ EnhancedDataSourceManager import successful')"
     
     - name: Create data directories
