@@ -4,6 +4,7 @@
 - [← Back to Main Documentation](../)
 - [📦 Installation Guide](installation.md) - **COMPLETE setup instructions**
 - [📖 User Guide](user_guide.md) - Dashboard usage for Investment Committee
+- [📊 Financial Methodology](financial-methodology.md) - **COMPREHENSIVE risk framework for IC members**
 
 ## Overview
 
@@ -30,9 +31,19 @@ Dashboard opens at: `http://localhost:8501`
 ## 📖 Next Steps
 
 ### For Investment Committee Members
+- **[Financial Methodology](financial-methodology.md)** - **ESSENTIAL**: Comprehensive risk framework, calculations, and assumptions
 - **[User Guide](user_guide.md)** - Complete dashboard usage guide
 - **Dashboard Features**: Interactive stress testing, scenario analysis, PDF reports
 - **Training**: Contact technical team for hands-on demonstration
+
+#### **🎯 IC Priority Reading**
+- **[Financial Methodology](financial-methodology.md)** covers:
+  - Risk metric definitions and calculations (Maximum Drawdown, Reserve Coverage, Liquidity)
+  - Stress testing methodology and scenario calibration
+  - Asset risk profiles and modeling assumptions
+  - Business assumptions requiring IC validation (SGD 2.4M OPEX, 12-month reserves)
+  - Historical performance analysis and benchmarking
+  - Implementation guidelines for regular IC review
 
 ### For Technical Staff
 - **[Installation Guide](installation.md)** - Complete setup, troubleshooting, and verification
