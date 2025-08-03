@@ -18,11 +18,11 @@ from .config import CACHE_DURATION_DAYS, CACHE_CLEANUP_DAYS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Try to import OpenBB Platform
+# Try to import OpenBB Platform with cloud deployment handling
 try:
     from openbb import obb
     OPENBB_AVAILABLE = True
-except ImportError:
+except (ImportError, PermissionError, OSError) as e:
     logger.warning("OpenBB Platform not available. Run: pip install openbb")
     OPENBB_AVAILABLE = False
 

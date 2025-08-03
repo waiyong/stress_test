@@ -352,8 +352,9 @@ Intelligent Refresh Decision Tree:
 
 ### **⚡ Immediate Next Steps (UPDATED)**
 1. **Business Stakeholder Validation**: ❌ **PENDING** - Confirm OPEX assumptions and risk thresholds with IC
-2. **Correlation Modeling Implementation**: ❌ **PENDING** - Add realistic crisis scenario correlations
-3. **End-to-End System Testing**: ❌ **PENDING** - Test complete workflow after ALL logic fixes
+2. **Demo Plan Review**: ❌ **PENDING** - Review Demo_plan.md file before Investment Committee presentation
+3. **Correlation Modeling Implementation**: ❌ **PENDING** - Add realistic crisis scenario correlations
+4. **End-to-End System Testing**: ❌ **PENDING** - Test complete workflow after ALL logic fixes
 
 ### **⚠️ Pre-Deployment Requirements (UPDATED)**
 - **Risk Logic Fixes**: ✅ Time Deposit sensitivity fixed, ✅ Early withdrawal penalty logic fixed

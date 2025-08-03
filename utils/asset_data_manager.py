@@ -16,12 +16,12 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Try to import OpenBB Platform
+# Try to import OpenBB Platform with cloud deployment handling
 try:
     from openbb import obb
     OPENBB_AVAILABLE = True
-except ImportError:
-    logger.warning("OpenBB Platform not available. Run: pip install openbb")
+except (ImportError, PermissionError, OSError) as e:
+    logger.warning(f"OpenBB Platform not available: {e}")
     OPENBB_AVAILABLE = False
 
 
