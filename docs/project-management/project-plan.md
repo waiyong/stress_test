@@ -198,6 +198,7 @@ stress_testing/
 - 📋 Simple password protection for IC access
 - 📋 Historical scenario comparison capabilities  
 - 📋 Advanced portfolio upload (Excel support)
+- 📋 Per-asset early withdrawal penalty rates (enhance portfolio.csv with Early_Withdrawal_Penalty column)
 - 📋 Advanced analytics (Monte Carlo, correlation analysis)
 
 ---

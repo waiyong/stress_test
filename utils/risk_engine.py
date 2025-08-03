@@ -91,18 +91,72 @@ class RiskEngine:
                 market_stress = stress_params.get('multi_asset_drawdown', 0) * 0.3  # Bonds less affected than equity
                 stressed_amount *= (1 + rate_impact + market_stress)
             
-            # Apply early withdrawal penalty for Time Deposits
-            if asset_type == 'Time_Deposit' and row['Liquidity_Period_Days'] > 90:
-                penalty = stress_params.get('early_withdrawal_penalty', 0)
-                stressed_amount *= (1 + penalty)
+            # Note: Early withdrawal penalties are applied later based on actual liquidity needs
             
             # Apply counterparty risk
             counterparty_risk = stress_params.get('counterparty_risk', 0)
             if counterparty_risk > 0:
                 stressed_amount *= (1 - counterparty_risk)
             
-            stressed_portfolio.loc[idx, 'Amount_SGD'] = max(0, stressed_amount)  # Ensure non-negative
+            stressed_portfolio.loc[idx, 'Amount_SGD'] = float(max(0, stressed_amount))  # Ensure non-negative and proper dtype
+        
+        # Apply early withdrawal penalties only when liquidity needs force early withdrawal
+        stressed_portfolio = self._apply_early_withdrawal_penalties(stressed_portfolio, stress_params)
             
+        return stressed_portfolio
+    
+    def _apply_early_withdrawal_penalties(self, stressed_portfolio: pd.DataFrame, stress_params: Dict[str, float]) -> pd.DataFrame:
+        """
+        Apply early withdrawal penalties only when liquidity needs force early withdrawal
+        
+        Logic:
+        1. Calculate immediate liquidity needs (annual OPEX requirement)
+        2. Determine available liquid assets (MMF, Cash, short-term assets)
+        3. Only apply penalties to Time Deposits if liquidity gap exists
+        """
+        # Calculate annual liquidity requirement
+        required_liquidity = ANNUAL_OPEX_SGD
+        
+        # Calculate available liquid assets (assets with liquidity <= 30 days)
+        liquid_assets = stressed_portfolio[
+            (stressed_portfolio['Asset_Type'].isin(['Cash_Equivalent', 'MMF'])) |
+            (stressed_portfolio['Liquidity_Period_Days'] <= 30)
+        ]
+        available_liquidity = liquid_assets['Amount_SGD'].sum()
+        
+        # Calculate liquidity gap
+        liquidity_gap = max(0, required_liquidity - available_liquidity)
+        
+        if liquidity_gap > 0:
+            # We need to break some Time Deposits early
+            penalty_rate = stress_params.get('early_withdrawal_penalty', 0)
+            
+            # Get Time Deposits that could be withdrawn early (sorted by liquidity period)
+            time_deposits = stressed_portfolio[
+                (stressed_portfolio['Asset_Type'] == 'Time_Deposit') &
+                (stressed_portfolio['Liquidity_Period_Days'] > 30)
+            ].copy()
+            
+            if len(time_deposits) > 0 and penalty_rate < 0:  # Only apply if penalty exists
+                # Sort by liquidity period (break shorter-term deposits first)
+                time_deposits = time_deposits.sort_values('Liquidity_Period_Days')
+                
+                remaining_gap = liquidity_gap
+                
+                for idx, row in time_deposits.iterrows():
+                    if remaining_gap <= 0:
+                        break
+                        
+                    deposit_amount = row['Amount_SGD']
+                    early_withdrawal_amount = min(deposit_amount, remaining_gap)
+                    
+                    # Apply penalty only to the amount withdrawn early
+                    penalty_amount = early_withdrawal_amount * abs(penalty_rate)
+                    new_amount = deposit_amount - penalty_amount
+                    
+                    stressed_portfolio.loc[idx, 'Amount_SGD'] = float(max(0, new_amount))
+                    remaining_gap -= early_withdrawal_amount
+        
         return stressed_portfolio
     
     def _calculate_reserve_coverage(self, stressed_value: float) -> float:

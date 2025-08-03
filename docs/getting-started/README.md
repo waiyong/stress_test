@@ -2,129 +2,62 @@
 
 ## Quick Navigation
 - [← Back to Main Documentation](../)
-- [User Guide](user_guide.md) - Complete user manual for Investment Committee
-- [Installation Guide](#installation) - Setup instructions below
+- [📦 Installation Guide](installation.md) - **COMPLETE setup instructions**
+- [📖 User Guide](user_guide.md) - Dashboard usage for Investment Committee
 
 ## Overview
 
-This section contains everything you need to get the Church Asset Risk Dashboard running and accessible to Investment Committee members.
+Get the Church Asset Risk Dashboard running for Investment Committee members. This section provides quick orientation and guides you to the appropriate detailed resources.
 
-## 📦 Installation
+## ⚡ Quick Setup Overview
+**For detailed installation, see [Installation Guide](installation.md)**
 
-### Prerequisites
-- Python 3.8 or higher
-- Git (for repository management)
-- Virtual environment support
+1. **Prerequisites**: Python 3.8+, virtual environment
+2. **Install**: `pip install -r requirements.txt` 
+3. **Setup**: `cp data/sample_portfolio.csv portfolio.csv`
+4. **Run**: `streamlit run app.py`
 
-### Step-by-Step Setup
-
-#### 1. Environment Setup
-```bash
-# Clone repository (if needed)
-git clone <repository-url>
-cd stress_testing
-
-# Create and activate virtual environment (REQUIRED)
-python3 -m venv venv
-source venv/bin/activate  # macOS/Linux
-# venv\Scripts\activate   # Windows
-
-# Verify virtual environment is active
-which python  # Should show path with /venv/
-```
-
-#### 2. Install Dependencies
-```bash
-# Install all required packages
-pip install -r requirements.txt
-
-# Verify OpenBB Platform installation
-python -c "from openbb import obb; print('✅ OpenBB Platform ready')"
-```
-
-#### 3. Initial Data Setup
-```bash
-# Test market data fetching
-python -c "from utils.enhanced_data_sources import get_enhanced_data_manager; print('✅ Data sources ready')"
-
-# Use sample portfolio for testing
-cp data/sample_portfolio.csv portfolio.csv
-```
-
-#### 4. Launch Dashboard
-```bash
-# Start Streamlit application
-streamlit run app.py
-```
-
-The dashboard opens automatically at `http://localhost:8501`
+Dashboard opens at: `http://localhost:8501`
 
 ## 🎯 Quick Start Checklist
 
+- [ ] **[Complete installation](installation.md)** - Detailed setup guide with troubleshooting
 - [ ] Virtual environment activated (`source venv/bin/activate`)
-- [ ] Dependencies installed (`pip install -r requirements.txt`)
-- [ ] Market data accessible (OpenBB Platform connected)
+- [ ] Dependencies installed and verified
 - [ ] Portfolio data loaded (`portfolio.csv` exists)
-- [ ] Dashboard running (`streamlit run app.py`)
+- [ ] Dashboard running and accessible
 
-## 📖 User Resources
+## 📖 Next Steps
 
 ### For Investment Committee Members
-- **[User Guide](user_guide.md)** - Complete guide to using the dashboard
-- **Dashboard URL**: `http://localhost:8501` (local) or deployed URL
-- **PDF Reports**: Generated within dashboard, downloadable for committee review
+- **[User Guide](user_guide.md)** - Complete dashboard usage guide
+- **Dashboard Features**: Interactive stress testing, scenario analysis, PDF reports
+- **Training**: Contact technical team for hands-on demonstration
 
 ### For Technical Staff
-- **Configuration**: See `../development/` section
-- **Troubleshooting**: Check virtual environment and dependencies
+- **[Installation Guide](installation.md)** - Complete setup, troubleshooting, and verification
+- **Configuration**: Key settings in `utils/config.py` (OPEX assumptions, reserve requirements)
 - **Updates**: Market data refreshes automatically via GitHub Actions
+- **Support**: See `../development/` section for technical resources
 
-## 🔧 Configuration
+## 🔧 Key Configuration Settings
 
-### Key Settings
-Essential configurations in `utils/config.py`:
-- `ANNUAL_OPEX_SGD`: Annual operational expenses (default: SGD 2.4M)
-- `RESERVE_MONTHS_REQUIRED`: Required reserve coverage (default: 12 months)
+Essential business parameters in `utils/config.py`:
+- `ANNUAL_OPEX_SGD`: Annual operational expenses (default: SGD 2.4M) - **Requires IC validation**
+- `RESERVE_MONTHS_REQUIRED`: Required reserve coverage (default: 12 months) - **Industry standard: 3-6 months**
 
-### Portfolio Data
+### Portfolio Data Management
 - **Location**: `portfolio.csv` in project root
 - **Format**: Asset Type, Amount (SGD), Fund Name, Liquidity Period, Notes
-- **Editing**: Direct CSV editing or use dashboard's portfolio editor
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-#### Virtual Environment
-```bash
-# If Python modules not found:
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-#### OpenBB Platform
-```bash
-# If market data fails:
-pip install --upgrade openbb
-```
-
-#### Port Conflicts
-```bash
-# If port 8501 busy:
-streamlit run app.py --server.port 8502
-```
-
-### Getting Help
-- **Technical Issues**: See `../development/` documentation
-- **User Questions**: Refer to [User Guide](user_guide.md)
-- **Project Status**: Check `../project-management/project-checkpoint.md`
+- **Sample Available**: `data/sample_portfolio.csv` for testing
 
 ## 🔗 Related Documentation
 
+- [📦 Installation Guide](installation.md) - **Complete technical setup**
 - [🏗️ Architecture](../architecture/) - Technical implementation details
-- [📋 Project Management](../project-management/) - Project planning and status
-- [🛠️ Development](../development/) - Developer resources
+- [📋 Project Management](../project-management/) - Project planning and current status
+- [🛠️ Development](../development/) - Developer resources and API reference
 
 ---
 
-*Next: Read the [User Guide](user_guide.md) for complete dashboard usage instructions*
+*Ready to install? See the [Installation Guide](installation.md) for complete setup instructions.*

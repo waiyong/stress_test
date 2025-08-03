@@ -30,7 +30,7 @@ ASSET_RISK_PROFILES = {
     "Time_Deposit": {
         "volatility": 0.005,
         "liquidity_days": 180,  # Average
-        "interest_rate_sensitivity": 0.8
+        "interest_rate_sensitivity": 0.0  # Fixed rate contracts unaffected by rate changes during term
     },
     "MMF": {
         "volatility": 0.02,
