@@ -57,6 +57,7 @@ jobs:
         mkdir -p data/market_cache/bonds
         mkdir -p data/market_cache/metadata
         mkdir -p data/market_cache/current
+        mkdir -p data/production_seed/current
     
     - name: Run incremental market data update
       if: github.event.inputs.update_type != 'full_refresh'
@@ -72,21 +73,28 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}
     
+    - name: Update production seed data
+      run: |
+        # Copy current essential data to production seed for Streamlit Cloud
+        if [ -d "data/market_cache/current" ]; then
+          cp data/market_cache/current/*.json data/production_seed/current/ 2>/dev/null || echo "No current data files to copy"
+        fi
+    
     - name: Check for data changes
       id: check_changes
       run: |
-        # Check for any changes (modified files) or new files in data/market_cache
-        if [ -n "$(git status --porcelain data/market_cache/)" ]; then
+        # Check for any changes in production seed data (this is what gets committed)
+        if [ -n "$(git status --porcelain data/production_seed/)" ]; then
           echo "changes=true" >> $GITHUB_OUTPUT
         fi
     
-    - name: Commit updated market data
+    - name: Commit updated production seed data
       if: steps.check_changes.outputs.changes == 'true'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add data/market_cache/
-        git commit -m "🤖 Automated market data update - $(date '+%Y-%m-%d %H:%M')"
+        git add data/production_seed/
+        git commit -m "🤖 Automated production seed data update - $(date '+%Y-%m-%d %H:%M')"
         git push
     
     - name: Create update summary
@@ -97,8 +105,8 @@ jobs:
         echo "- **Update Type**: ${{ github.event.inputs.update_type || 'incremental' }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
         
-        if [ -f "data/market_cache/current/STI_current.json" ]; then
-          STI_PRICE=$(python -c "import json; f=open('data/market_cache/current/STI_current.json'); data=json.load(f); f.close(); print('\$' + '{:.2f}'.format(data.get('current_price', 0)))" 2>/dev/null || echo "N/A")
+        if [ -f "data/production_seed/current/STI_current.json" ]; then
+          STI_PRICE=$(python -c "import json; f=open('data/production_seed/current/STI_current.json'); data=json.load(f); f.close(); print('\$' + '{:.2f}'.format(data.get('current_price', 0)))" 2>/dev/null || echo "N/A")
           echo "- **STI Price**: $STI_PRICE" >> $GITHUB_STEP_SUMMARY
         fi
         
@@ -106,5 +114,7 @@ jobs:
           LAST_UPDATE=$(python -c "import json; f=open('data/market_cache/metadata/data_status.json'); data=json.load(f); f.close(); print(data.get('last_full_update') or data.get('last_incremental_update') or 'N/A')" 2>/dev/null || echo "N/A")
           echo "- **Last Update**: $LAST_UPDATE" >> $GITHUB_STEP_SUMMARY
         fi
+        
+        echo "- **Production Seed Updated**: $([ -n \"$(git status --porcelain data/production_seed/)\" ] && echo \"Yes\" || echo \"No changes needed\")" >> $GITHUB_STEP_SUMMARY
         
         
