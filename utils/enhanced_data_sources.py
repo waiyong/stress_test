@@ -14,6 +14,17 @@ import logging
 from .asset_data_manager import AssetDataManager
 from .config import CACHE_DURATION_DAYS, CACHE_CLEANUP_DAYS
 
+# Environment detection for data path
+def get_data_cache_dir():
+    """Determine appropriate data directory based on environment"""
+    # Check for Streamlit Cloud environment
+    if (os.getenv('STREAMLIT_SERVER_HEADLESS') == 'true' or 
+        '/mount/src/' in os.getcwd() or 
+        'adminuser' in os.getenv('HOME', '')):
+        return "data/production_seed"  # Production: minimal seed data
+    else:
+        return "data/market_cache"    # Local: full development cache
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,9 +41,12 @@ except (ImportError, PermissionError, OSError) as e:
 class EnhancedDataSourceManager:
     """Enhanced data source manager with OpenBB integration and asset-based storage"""
     
-    def __init__(self, cache_dir: str = "data/market_cache"):
+    def __init__(self, cache_dir: str = None):
         """Initialize enhanced data source manager"""
+        if cache_dir is None:
+            cache_dir = get_data_cache_dir()
         self.asset_manager = AssetDataManager(cache_dir)
+        logger.info(f"Using data directory: {cache_dir}")
         self.last_full_refresh = None
         self.refresh_threshold_hours = 24  # Force full refresh after 24 hours
         self.backfill_start_date = "2018-01-01"  # Default backfill start date

@@ -1,5 +1,5 @@
-# Cache files (market data needed for Streamlit Cloud)  
-# data/market_cache/  # Commented out - remote workflow needs to commit this data
+# Cache files (separated for local development vs production)
+data/market_cache/  # Local development cache - not committed
 
 # Python
 __pycache__/
