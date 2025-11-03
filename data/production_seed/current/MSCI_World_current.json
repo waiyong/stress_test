@@ -1,10 +1,10 @@
 {
-  "current_price": 184.64999389648438,
+  "current_price": 185.02999877929688,
   "computed_metrics": {
-    "1y_return": 1.0798602887517046,
-    "1y_volatility": 0.18716997864576101,
+    "1y_return": 1.0841405871076122,
+    "1y_volatility": 0.18712331224632586,
     "max_drawdown": -0.3400901138155914
   },
-  "last_updated": "2025-10-31T10:20:23.182303",
-  "source_file": "MSCI_World_2025-10.json"
+  "last_updated": "2025-11-03T10:22:45.434774",
+  "source_file": "MSCI_World_2025-11.json"
 }
