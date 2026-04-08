@@ -1,14 +1,14 @@
 {
   "rates": {
-    "sgd_usd": 0.7784523963928223,
-    "usd_sgd": 1.2846000662773738
+    "sgd_usd": NaN,
+    "usd_sgd": NaN
   },
   "computed_metrics": {
-    "volatility": 0.0447427281344709,
-    "1y_change": 0.02438111101376463,
+    "volatility": 0.044730850794128696,
+    "1y_change": NaN,
     "max_rate": 0.7932101488113403,
     "min_rate": 0.6866716742515564
   },
-  "last_updated": "2026-04-07T10:54:35.187150",
+  "last_updated": "2026-04-08T10:55:23.597159",
   "source_file": "SGDUSD_2026-04.json"
 }
