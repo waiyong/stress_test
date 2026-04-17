@@ -1,10 +1,10 @@
 {
-  "current_price": 5007.830078125,
+  "current_price": 4997.93017578125,
   "computed_metrics": {
-    "1y_return": 0.4598810619601041,
-    "1y_volatility": 0.1363261119560923,
+    "1y_return": 0.4569950455175681,
+    "1y_volatility": 0.1362954792662005,
     "max_drawdown": -0.38221107013302846
   },
-  "last_updated": "2026-04-16T11:02:14.728276",
+  "last_updated": "2026-04-17T10:55:10.109435",
   "source_file": "STI_2026-04.json"
 }
