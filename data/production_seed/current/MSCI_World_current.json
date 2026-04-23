@@ -1,10 +1,10 @@
 {
-  "current_price": 193.27999877929688,
+  "current_price": 194.9199981689453,
   "computed_metrics": {
-    "1y_return": 1.1770669231454074,
-    "1y_volatility": 0.18484958939676932,
+    "1y_return": 1.1955395454950135,
+    "1y_volatility": 0.18482640201968872,
     "max_drawdown": -0.3400901138155914
   },
-  "last_updated": "2026-04-22T11:04:29.956448",
+  "last_updated": "2026-04-23T11:07:49.533428",
   "source_file": "MSCI_World_2026-04.json"
 }
