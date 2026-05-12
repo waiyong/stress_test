@@ -1,16 +1,16 @@
 {
   "rates": {
-    "sora_rate": 0.02985785587779552,
-    "fixed_deposit_rate": 0.03785785587779552,
-    "1y_sgs": 0.03685785587779552,
-    "10y_sgs": 0.05185785587779552
+    "sora_rate": 0.031745981034963046,
+    "fixed_deposit_rate": 0.039745981034963046,
+    "1y_sgs": 0.038745981034963045,
+    "10y_sgs": 0.053745981034963045
   },
   "computed_metrics": {
-    "sora_volatility": 0.04461005711798003,
-    "fd_volatility": 0.04461005711798004,
-    "sora_1y_change": 0.0138260282056978,
-    "fd_1y_change": 0.0138260282056978
+    "sora_volatility": 0.04450067621501499,
+    "fd_volatility": 0.04450067621501499,
+    "sora_1y_change": 0.018024251309173466,
+    "fd_1y_change": 0.018024251309173466
   },
-  "last_updated": "2026-05-11T12:38:31.045943",
+  "last_updated": "2026-05-12T11:54:19.522043",
   "source_file": "singapore_rates_2026-05.json"
 }
