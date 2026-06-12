@@ -1,10 +1,10 @@
 {
-  "current_price": 98.49500274658203,
+  "current_price": 98.87999725341797,
   "computed_metrics": {
-    "1y_return": -0.09778323350196692,
-    "1y_volatility": 0.057864624702102865,
+    "1y_return": -0.09425667388583372,
+    "1y_volatility": 0.0578958364665382,
     "max_drawdown": -0.23372063634878837
   },
-  "last_updated": "2026-06-11T13:58:23.370261",
+  "last_updated": "2026-06-12T12:53:41.382436",
   "source_file": "Global_Bonds_2026-06.json"
 }
