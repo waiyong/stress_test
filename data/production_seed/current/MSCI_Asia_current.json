@@ -1,10 +1,10 @@
 {
-  "current_price": 123.30000305175781,
+  "current_price": 124.19999694824219,
   "computed_metrics": {
-    "1y_return": 0.5832050256825922,
-    "1y_volatility": 0.2156698317200517,
+    "1y_return": 0.5947611880891707,
+    "1y_volatility": 0.21563252921999812,
     "max_drawdown": -0.45934563443631193
   },
-  "last_updated": "2026-06-19T13:34:42.094999",
+  "last_updated": "2026-06-22T15:23:31.639456",
   "source_file": "MSCI_Asia_2026-06.json"
 }
