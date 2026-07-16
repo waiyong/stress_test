@@ -1,10 +1,10 @@
 {
-  "current_price": NaN,
+  "current_price": 204.75,
   "computed_metrics": {
-    "1y_return": NaN,
-    "1y_volatility": 0.18370754669549816,
+    "1y_return": 1.3062627034834657,
+    "1y_volatility": 0.18367410662234712,
     "max_drawdown": -0.3400901138155914
   },
-  "last_updated": "2026-07-15T11:28:01.246304",
+  "last_updated": "2026-07-16T11:38:53.733941",
   "source_file": "MSCI_World_2026-07.json"
 }
