@@ -1,10 +1,10 @@
 {
-  "current_price": NaN,
+  "current_price": 97.66000366210938,
   "computed_metrics": {
-    "1y_return": NaN,
-    "1y_volatility": 0.057631229645436856,
+    "1y_return": -0.10543184666013937,
+    "1y_volatility": 0.05763658933163784,
     "max_drawdown": -0.23372063634878837
   },
-  "last_updated": "2026-08-04T12:01:59.388611",
+  "last_updated": "2026-08-05T11:59:02.310253",
   "source_file": "Global_Bonds_2026-08.json"
 }
