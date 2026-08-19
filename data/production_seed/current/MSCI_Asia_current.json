@@ -1,10 +1,10 @@
 {
-  "current_price": NaN,
+  "current_price": 113.55000305175781,
   "computed_metrics": {
-    "1y_return": NaN,
-    "1y_volatility": 0.21773879745270483,
+    "1y_return": 0.45801241726128045,
+    "1y_volatility": 0.21797521238611145,
     "max_drawdown": -0.45934563443631193
   },
-  "last_updated": "2026-08-18T10:26:11.910880",
+  "last_updated": "2026-08-19T10:27:00.471754",
   "source_file": "MSCI_Asia_2026-08.json"
 }
