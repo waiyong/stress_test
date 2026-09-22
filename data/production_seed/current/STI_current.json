@@ -1,10 +1,10 @@
 {
-  "current_price": NaN,
+  "current_price": 5723.759765625,
   "computed_metrics": {
-    "1y_return": NaN,
-    "1y_volatility": 0.13522403711952347,
+    "1y_return": 0.6685886610940571,
+    "1y_volatility": 0.1352264527968601,
     "max_drawdown": -0.38221107013302846
   },
-  "last_updated": "2026-09-21T16:13:11.095189",
+  "last_updated": "2026-09-22T14:21:09.187048",
   "source_file": "STI_2026-09.json"
 }
