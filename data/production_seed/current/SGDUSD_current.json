@@ -1,12 +1,12 @@
 {
   "rates": {
-    "sgd_usd": 0.7424205033575764,
-    "usd_sgd": 1.3469455591238757
+    "sgd_usd": 0.7644482808645425,
+    "usd_sgd": 1.3081329699231756
   },
   "computed_metrics": {
     "volatility": 0.08,
     "1y_change": 0.02
   },
-  "last_updated": "2026-10-12T19:39:53.102734",
+  "last_updated": "2026-10-13T17:23:00.791211",
   "source_file": "SGDUSD_2026-10.json"
 }
